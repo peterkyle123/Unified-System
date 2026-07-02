@@ -20,6 +20,7 @@ A **Laravel 12** + **Livewire** internal system for managing pharmaceutical RFQs
 | **Multi-Theme** | Light, Dark, and "Prime Link" (green accent) themes with persistent `localStorage` preference |
 | **Responsive** | Mobile-friendly layout with hamburger menu |
 | **RFQ Printing** | Print-ready RFQ view for physical documentation |
+| **Procurement Management** | Create, edit, and track procurement orders with items from awarded RFQs, multi-agency support, and Excel export |
 
 ---
 
@@ -151,6 +152,9 @@ app/
 ├── Livewire/
 │   ├── RfqTracker.php                 # RFQ list with search, filter, pagination
 │   ├── RfqForm.php                    # RFQ create/edit form with line items
+│   ├── ProcurementTracker.php         # Procurement list with status tracking
+│   ├── ProcurementForm.php            # Procurement create/edit form with RFQ picker
+│   ├── ConfirmModal.php               # Confirmation dialog for destructive actions
 │   ├── AgencyList.php                 # Agency list component
 │   ├── AgencyForm.php                 # Agency form component
 │   ├── ActivityLogPage.php            # Activity log viewer
@@ -184,11 +188,20 @@ resources/
 │   ├── show.blade.php                 # RFQ detail view
 │   ├── print.blade.php                # Print-ready RFQ view
 │   └── decline.blade.php              # Decline RFQ view
+├── procurements/
+│   ├── index.blade.php                # Procurement list view
+│   ├── create.blade.php               # Procurement create view
+│   ├── edit.blade.php                 # Procurement edit view
+│   ├── show.blade.php                 # Procurement detail view
+│   └── print.blade.php                # Print-ready procurement quotation
 ├── agencies/
 │   └── ...
 ├── cpr/
 │   └── ...
-├── l/                                 # Livewire views
+├── livewire/
+│   ├── procurement-tracker.blade.php
+│   ├── procurement-form.blade.php
+│   ├── confirm-modal.blade.php
 │   ├── rfq-tracker.blade.php
 │   ├── rfq-form.blade.php
 │   ├── agency-list.blade.php
@@ -246,6 +259,13 @@ routes/
 | GET/PUT | `/users/{user}/edit` | admin | Edit user |
 | DELETE | `/users/{user}` | admin | Delete user |
 | POST | `/users/{user}/reset-password` | admin | Reset user password |
+| GET | `/procurements` | auth | Procurement list (Livewire) |
+| GET/POST | `/procurements/create` | auth | Create procurement |
+| GET | `/procurements/{procurement}` | auth | View procurement details |
+| GET | `/procurements/{procurement}/edit` | auth | Edit procurement |
+| PUT | `/procurements/{procurement}` | auth | Update procurement |
+| DELETE | `/procurements/{procurement}` | auth | Delete procurement |
+| GET | `/procurements/{procurement}/print` | auth | Print procurement quotation |
 | GET | `/settings` | admin | System settings |
 | PUT | `/settings` | admin | Update settings |
 | GET | `/activity-log` | admin | Activity log |
@@ -326,6 +346,35 @@ routes/
 | id | bigint | Primary key |
 | key | string | Unique |
 | value | text | |
+| timestamps | | |
+
+### Procurements
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint | Primary key |
+| procurement_number | string | Auto-generated |
+| date_prepared | date | |
+| delivery_deadline | date | Nullable |
+| prepared_by | string | User who created |
+| status | string | `Draft`, `Submitted`, `Approved`, `Ordered`, `Delivered`, `Cancelled` |
+| notes | text | Nullable |
+| agency_id | bigint | Foreign key → agencies |
+| timestamps | | |
+
+### Procurement Items
+| Column | Type | Notes |
+|--------|------|-------|
+| id | bigint | Primary key |
+| procurement_id | bigint | Foreign key → procurements |
+| rfq_id | bigint | Nullable — source RFQ |
+| agency_id | bigint | Foreign key → agencies |
+| brand | string | Nullable |
+| item_description | string | |
+| unit | string | |
+| quantity | decimal | |
+| unit_price | decimal | Nullable |
+| total_price | decimal | Nullable — calculated |
+| status | string | `Pending`, `Ordered`, `Delivered`, `Received`, `Cancelled` |
 | timestamps | | |
 
 ### Activity Log
