@@ -13,7 +13,7 @@
 
     <form wire:submit.prevent="save">
 
-        {{-- Section 1: Procurement Information --}}
+        {{-- Section 1: Procurement Informations --}}
         <div class="bg-white dark:bg-[var(--surface)] prime:bg-white rounded-xl border border-gray-200 dark:border-[var(--border)] prime:border-green-900 p-6 mb-4">
             <p class="text-xs font-medium text-gray-400 dark:text-[var(--accent)] prime:text-green-700 uppercase tracking-wide mb-4">Procurement Information</p>
 
