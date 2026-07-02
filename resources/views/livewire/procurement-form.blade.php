@@ -240,18 +240,9 @@
                         </tbody>
                         <tfoot>
                             <tr class="border-t-2 border-gray-200 dark:border-[var(--border)] prime:border-green-900">
-<<<<<<< Updated upstream
-                                <td colspan="6" class="py-3 px-2 text-right font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">Total Amount:</td>
-                                <td class="py-3 px-2 text-right font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">
-                                    <span class="inline-flex items-center justify-end gap-0.5">
-                                        <span class="text-sm">₱ </span>
-                                        <span class="font-mono">{{ number_format(collect($this->items)->sum(fn($item) => (float) ($item['unit_price'] ?? 0) * (float) ($item['quantity'] ?? 0)), 2) }}</span>
-                                    </span>
-=======
                                 <td colspan="7" class="py-3 px-2 text-right font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">Total Amount:</td>
                                 <td class="py-3 px-2 text-right font-mono font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">
                                     <span style="white-space: nowrap;">₱ {{ number_format(collect($this->items)->sum(fn($item) => (float) ($item['unit_price'] ?? 0) * (float) ($item['quantity'] ?? 0)), 2) }}</span>
->>>>>>> Stashed changes
                                 </td>
                                 <td colspan="1"></td>
                             </tr>
