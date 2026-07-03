@@ -180,6 +180,10 @@
                    class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-medium">
                     Edit Procurement
                 </a>
+                <a href="{{ route('purchase-orders.create', $procurement) }}"
+                   class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition text-sm font-medium">
+                    Create Purchase Order
+                </a>
             </div>
         @endif
     </div>

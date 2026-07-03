@@ -38,6 +38,11 @@ class Procurement extends Model
         return $this->belongsToMany(Agency::class, 'procurement_items');
     }
 
+    public function purchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
+
     public static function generateNumber(): string
     {
         $year = now()->year;

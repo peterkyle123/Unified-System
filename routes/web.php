@@ -11,6 +11,10 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ProcurementController;
 use App\Livewire\ActivityLogPage;
 use App\Livewire\ProcurementTracker;
+use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\SupplierController;
 
 // ── Auth routes (guest only) ─────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
