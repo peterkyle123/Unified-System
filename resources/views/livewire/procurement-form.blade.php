@@ -163,19 +163,55 @@
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-[var(--border)] prime:border-green-900">
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Agency</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Brand</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Description <span class="text-red-500">*</span></th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Unit <span class="text-red-500">*</span></th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Qty <span class="text-red-500">*</span></th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Unit Price</th>
+                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                    <button type="button" wire:click="sortBy('agency_id')" class="hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900">
+                                        Agency
+                                        @if($itemSortBy === 'agency_id')
+                                            <span class="ml-1">{{ $itemSortDirection === 'asc' ? '↑' : '↓' }}</span>
+                                        @endif
+                                    </button>
+                                </th>
+                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                    <button type="button" wire:click="sortBy('brand')" class="hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900">
+                                        Brand
+                                        @if($itemSortBy === 'brand')
+                                            <span class="ml-1">{{ $itemSortDirection === 'asc' ? '↑' : '↓' }}</span>
+                                        @endif
+                                    </button>
+                                </th>
+                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                    <button type="button" wire:click="sortBy('item_description')" class="hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900">
+                                        Description <span class="text-red-500">*</span>
+                                        @if($itemSortBy === 'item_description')
+                                            <span class="ml-1">{{ $itemSortDirection === 'asc' ? '↑' : '↓' }}</span>
+                                        @endif
+                                    </button>
+                                </th>
+                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Unit</th>
+                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                    <button type="button" wire:click="sortBy('quantity')" class="hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900">
+                                        Qty <span class="text-red-500">*</span>
+                                        @if($itemSortBy === 'quantity')
+                                            <span class="ml-1">{{ $itemSortDirection === 'asc' ? '↑' : '↓' }}</span>
+                                        @endif
+                                    </button>
+                                </th>
+                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                    <button type="button" wire:click="sortBy('unit_price')" class="hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900">
+                                        Unit Price
+                                        @if($itemSortBy === 'unit_price')
+                                            <span class="ml-1">{{ $itemSortDirection === 'asc' ? '↑' : '↓' }}</span>
+                                        @endif
+                                    </button>
+                                </th>
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Total</th>
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Status</th>
                                 <th class="py-2 px-2"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($items as $index => $item)
+                            @foreach($paginatedOrder as $displayIndex)
+                                @php $index = $displayIndex; $item = $items[$index]; @endphp
                                 <tr class="border-b border-gray-100 dark:border-[var(--border)] prime:border-green-100">
                                     <td class="py-2 px-2">
                                         <select wire:model="items.{{ $index }}.agency_id"
@@ -248,6 +284,57 @@
                             </tr>
                         </tfoot>
                     </table>
+                    
+                    {{-- Pagination Controls --}}
+                    <div class="flex items-center justify-between mt-4 px-2">
+                        <div class="flex items-center gap-3">
+                            <p class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                Showing {{ (($currentPage - 1) * $itemsPerPage) + 1 }} - {{ min($currentPage * $itemsPerPage, count($itemOrder)) }} of {{ count($itemOrder) }} items
+                            </p>
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-xs text-gray-400 dark:text-[var(--text-3)] prime:text-gray-400">Per page:</label>
+                                <select wire:model.live="itemsPerPage"
+                                        class="text-xs border border-gray-200 dark:border-[var(--border)] prime:border-green-900 dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] prime:text-gray-900 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                                    @php $totalItemCount = count($itemOrder); @endphp
+                                    @if($totalItemCount >= 5) <option value="5">5</option> @endif
+                                    @if($totalItemCount >= 10) <option value="10">10</option> @endif
+                                    @if($totalItemCount >= 20) <option value="20">20</option> @endif
+                                    @if($totalItemCount >= 50) <option value="50">50</option> @endif
+                                    @if($totalItemCount >= 100) <option value="100">100</option> @endif
+                                    <option value="0">All</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($totalPages > 1)
+                                <button type="button" wire:click="prevPage" {{ $currentPage <= 1 ? 'disabled' : '' }}
+                                        class="text-sm px-3 py-1.5 rounded border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 hover:bg-gray-50 dark:hover:bg-[var(--surface-3)] prime:hover:bg-green-50 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                    ← Prev
+                                </button>
+                                
+                                @for($i = 1; $i <= $totalPages; $i++)
+                                    @if($i == 1 || $i == $totalPages || abs($i - $currentPage) <= 1)
+                                        <button type="button" wire:click="goToPage({{ $i }})"
+                                                class="text-sm px-3 py-1.5 rounded border transition
+                                                @if($i == $currentPage)
+                                                    bg-blue-600 text-white border-blue-600
+                                                @else
+                                                    border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 hover:bg-gray-50 dark:hover:bg-[var(--surface-3)] prime:hover:bg-green-50
+                                                @endif">
+                                            {{ $i }}
+                                        </button>
+                                    @elseif(abs($i - $currentPage) == 2)
+                                        <span class="text-sm text-gray-400 px-1">...</span>
+                                    @endif
+                                @endfor
+                                
+                                <button type="button" wire:click="nextPage" {{ $currentPage >= $totalPages ? 'disabled' : '' }}
+                                        class="text-sm px-3 py-1.5 rounded border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 hover:bg-gray-50 dark:hover:bg-[var(--surface-3)] prime:hover:bg-green-50 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                    Next →
+                                </button>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             @else
                 <p class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 text-center py-8">No items added yet. Add items manually or select from awarded RFQs above.</p>

@@ -10,6 +10,7 @@ use App\Models\RfqItem;
 use App\Models\ActivityLog;
 use Livewire\Component;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\Computed;
 
 class ProcurementForm extends Component
 {
@@ -38,7 +39,13 @@ class ProcurementForm extends Component
     public ?int $selectedRfqId = null;
     public bool $showRfqPicker = false;
     public bool $showDuplicateWarning = false;
+    public bool $addDuplicateMode = false;
     public ?int $procurementId = null;
+    public string $itemSortBy = 'rfq_item_id';
+    public string $itemSortDirection = 'asc';
+    public array $itemOrder = [];
+    public int $itemsPerPage = 10;
+    public int $currentPage = 1;
 
     public function mount(?int $procurementId = null): void
     {
@@ -69,6 +76,14 @@ class ProcurementForm extends Component
             $this->procurement_number = Procurement::generateNumber();
             $this->prepared_by = auth()->user()?->name ?? '';
         }
+        
+        $this->resetItemOrder();
+    }
+    
+    protected function resetItemOrder(): void
+    {
+        $this->itemOrder = array_keys($this->items);
+        $this->currentPage = 1;
     }
 
     public function toggleRfqPicker(): void
@@ -102,7 +117,9 @@ class ProcurementForm extends Component
     public function confirmAddRfq(): void
     {
         $this->showDuplicateWarning = false;
+        $this->addDuplicateMode = true;
         $this->addRfqItems();
+        $this->addDuplicateMode = false;
     }
 
     public function cancelAddRfq(): void
@@ -127,11 +144,16 @@ class ProcurementForm extends Component
         $rfq = Rfq::with('items')->findOrFail($this->selectedRfqId);
 
         foreach ($rfq->items as $rfqItem) {
-            $existing = collect($this->items)->first(fn($item) =>
+            $existingIndex = collect($this->items)->search(fn($item) =>
                 $item['rfq_item_id'] == $rfqItem->id && $item['agency_id'] == $rfq->agency_id
             );
 
-            if (!$existing) {
+            if ($existingIndex !== false) {
+                if ($this->addDuplicateMode) {
+                    $this->items[$existingIndex]['quantity'] = (string) ((float) ($this->items[$existingIndex]['quantity'] ?? 0) + (float) $rfqItem->quantity);
+                    $this->resetItemOrder();
+                }
+            } else {
                 $this->items[] = [
                     'agency_id' => (string) $rfq->agency_id,
                     'rfq_item_id' => (string) $rfqItem->id,
@@ -149,6 +171,7 @@ class ProcurementForm extends Component
         $this->selectedRfqId = null;
         $this->showRfqPicker = false;
         $this->rfqSearch = '';
+        $this->resetItemOrder();
         $this->dispatch('item-added');
     }
 
@@ -167,6 +190,7 @@ class ProcurementForm extends Component
                 'notes' => '',
             ],
         ];
+        $this->resetItemOrder();
     }
 
     public function addItem(): void
@@ -193,10 +217,17 @@ class ProcurementForm extends Component
             'status' => 'Pending',
             'notes' => '',
         ];
+        $this->resetItemOrder();
     }
 
     public function removeItem(int $index): void
     {
+        // Update itemOrder to remove the index
+        $this->itemOrder = array_values(array_filter($this->itemOrder, fn($i) => $i !== $index));
+        
+        // Re-index remaining indices in itemOrder that were greater than the removed index
+        $this->itemOrder = array_map(fn($i) => $i > $index ? $i - 1 : $i, $this->itemOrder);
+        
         array_splice($this->items, $index, 1);
 
         if (empty($this->items)) {
@@ -283,6 +314,72 @@ class ProcurementForm extends Component
             ->get();
     }
 
+    public function goToPage(int $page): void
+    {
+        $this->currentPage = max(1, min($page, $this->totalPages));
+    }
+
+    public function nextPage(): void
+    {
+        $this->goToPage($this->currentPage + 1);
+    }
+
+    public function prevPage(): void
+    {
+        $this->goToPage($this->currentPage - 1);
+    }
+
+    public function getTotalPagesProperty(): int
+    {
+        if ($this->itemsPerPage <= 0) {
+            return 1;
+        }
+        return max(1, (int) ceil(count($this->itemOrder) / $this->itemsPerPage));
+    }
+
+    public function getPaginatedOrderProperty(): array
+    {
+        if ($this->itemsPerPage <= 0) {
+            return $this->itemOrder;
+        }
+        return array_slice($this->itemOrder, ($this->currentPage - 1) * $this->itemsPerPage, $this->itemsPerPage);
+    }
+
+    public function sortBy(string $field): void
+    {
+        if ($this->itemSortBy === $field) {
+            $this->itemSortDirection = $this->itemSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->itemSortBy = $field;
+            $this->itemSortDirection = 'asc';
+        }
+        
+        $this->sortItems();
+    }
+    
+    protected function sortItems(): void
+    {
+        $sortBy = $this->itemSortBy;
+        $sortDirection = $this->itemSortDirection;
+        $indices = $this->itemOrder;
+        
+        usort($indices, function ($a, $b) use ($sortBy, $sortDirection) {
+            $valueA = (string) ($this->items[$a][$sortBy] ?? '');
+            $valueB = (string) ($this->items[$b][$sortBy] ?? '');
+            
+            if ($sortBy === 'quantity' || $sortBy === 'unit_price') {
+                $numA = (float) ($valueA ?: 0);
+                $numB = (float) ($valueB ?: 0);
+                return $sortDirection === 'asc' ? $numA <=> $numB : $numB <=> $numA;
+            }
+            
+            $cmp = strcmp(strtolower($valueA), strtolower($valueB));
+            return $sortDirection === 'asc' ? $cmp : -$cmp;
+        });
+        
+        $this->itemOrder = $indices;
+    }
+
     public function render()
     {
         $selectedRfq = $this->selectedRfqId
@@ -293,6 +390,9 @@ class ProcurementForm extends Component
             'agencies' => Agency::orderBy('name')->get(),
             'awardedRfqs' => $this->awardedRfqs,
             'selectedRfq' => $selectedRfq,
+            'itemOrder' => $this->itemOrder,
+            'paginatedOrder' => $this->paginatedOrder,
+            'totalPages' => $this->totalPages,
         ]);
     }
 }

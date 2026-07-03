@@ -104,7 +104,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($procurement->items as $item)
+                            @foreach($items as $item)
                                 <tr class="border-b border-gray-100 dark:border-[var(--border)] prime:border-green-100">
                                     <td class="py-2 px-2">{{ $item->agency->name ?? 'N/A' }}</td>
                                     <td class="py-2 px-2">{{ $item->item_description }}</td>
@@ -130,6 +130,44 @@
                             </tr>
                         </tfoot>
                     </table>
+                    
+                    {{-- Pagination --}}
+                    @if($items->hasPages())
+                        <div class="flex items-center justify-between mt-4 px-2">
+                            <p class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">
+                                Showing {{ $items->firstItem() }} - {{ $items->lastItem() }} of {{ $items->total() }} items
+                            </p>
+                            <div class="flex items-center gap-2">
+                                @if($items->onFirstPage())
+                                    <span class="text-sm px-3 py-1.5 rounded border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-400 opacity-40 cursor-not-allowed">← Prev</span>
+                                @else
+                                    <a href="{{ $items->previousPageUrl() }}" class="text-sm px-3 py-1.5 rounded border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 hover:bg-gray-50 dark:hover:bg-[var(--surface-3)] prime:hover:bg-green-50 transition">← Prev</a>
+                                @endif
+                                
+                                @foreach($items->getUrlRange(1, $items->lastPage()) as $page => $url)
+                                    @if($page == 1 || $page == $items->lastPage() || abs($page - $items->currentPage()) <= 1)
+                                        <a href="{{ $url }}"
+                                           class="text-sm px-3 py-1.5 rounded border transition
+                                           @if($page == $items->currentPage())
+                                               bg-blue-600 text-white border-blue-600
+                                           @else
+                                               border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 hover:bg-gray-50 dark:hover:bg-[var(--surface-3)] prime:hover:bg-green-50
+                                           @endif">
+                                            {{ $page }}
+                                        </a>
+                                    @elseif(abs($page - $items->currentPage()) == 2)
+                                        <span class="text-sm text-gray-400 px-1">...</span>
+                                    @endif
+                                @endforeach
+                                
+                                @if($items->hasMorePages())
+                                    <a href="{{ $items->nextPageUrl() }}" class="text-sm px-3 py-1.5 rounded border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 hover:bg-gray-50 dark:hover:bg-[var(--surface-3)] prime:hover:bg-green-50 transition">Next →</a>
+                                @else
+                                    <span class="text-sm px-3 py-1.5 rounded border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-400 opacity-40 cursor-not-allowed">Next →</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @else
                 <p class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 text-center py-8">No items in this procurement.</p>

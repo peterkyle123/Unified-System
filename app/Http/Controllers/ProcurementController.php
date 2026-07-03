@@ -34,7 +34,8 @@ class ProcurementController extends Controller
 
     public function show(Procurement $procurement)
     {
-        return view('procurements.show', compact('procurement'));
+        $items = $procurement->items()->with('agency')->orderBy('id')->paginate(10);
+        return view('procurements.show', compact('procurement', 'items'));
     }
 
     public function edit(Procurement $procurement)
