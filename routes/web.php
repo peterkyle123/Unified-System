@@ -13,8 +13,6 @@ use App\Livewire\ActivityLogPage;
 use App\Livewire\ProcurementTracker;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\PurchaseOrderController;
-use App\Http\Controllers\SupplierController;
 
 // ── Auth routes (guest only) ─────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -70,6 +68,22 @@ Route::middleware('auth')->group(function () {
     Route::delete('/procurements/{procurement}', [ProcurementController::class, 'destroy'])->name('procurements.destroy');
     Route::get('/procurements/{procurement}/print', [ProcurementController::class, 'print'])->name('procurements.print');
     Route::get('/procurements/{procurement}/export', [ProcurementController::class, 'export'])->name('procurements.export');
+
+    // ── Purchase Order routes ────────────────────────────────────────────────
+    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('/procurements/{procurement}/purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+    Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::get('/purchase-orders/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('purchase-orders.edit');
+    Route::delete('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy');
+    Route::get('/purchase-orders/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('purchase-orders.print');
+
+    // ── Supplier routes ───────────────────────────────────────────────────────
+    Route::get('/suppliers',                [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/create',          [SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/suppliers',                [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/suppliers/{supplier}',      [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('/suppliers/{supplier}',   [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // ── Profile (self-service) ────────────────────────────────────────────────
     Route::get('/profile/edit', [UserController::class, 'profileEdit'])->name('profile.edit');

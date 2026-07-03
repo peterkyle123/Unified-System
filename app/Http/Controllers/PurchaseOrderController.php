@@ -4,13 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
+use App\Models\Procurement;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 
 class PurchaseOrderController extends Controller
 {
+    public function index()
+    {
+        $purchaseOrders = PurchaseOrder::with(['supplier', 'procurement'])
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
+        return view('purchase-orders.index', compact('purchaseOrders'));
+    }
+
+    public function create(Procurement $procurement)
+    {
+        return view('purchase-orders.create', compact('procurement'));
+    }
+
     public function show(PurchaseOrder $purchaseOrder)
     {
+        $purchaseOrder->load(['supplier', 'procurement', 'preparedBy', 'items']);
+
         return view('purchase-orders.show', compact('purchaseOrder'));
     }
 

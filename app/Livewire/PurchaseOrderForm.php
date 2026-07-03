@@ -105,10 +105,11 @@ class PurchaseOrderForm extends Component
             $po = PurchaseOrder::findOrFail($this->purchaseOrderId);
             $po->update($validated);
             ActivityLog::log('purchase_order.updated', $po);
-        } else {
+     } else {
+            $validated['po_number'] = $this->po_number;
             $validated['prepared_by'] = auth()->id();
             $validated['procurement_id'] = $this->procurement_id;
-            $po = PurchaseOrder::create($validated);
+            $po = PurchaseOrder::create($validated)->fresh();
             ActivityLog::log('purchase_order.created', $po);
         }
         $po->items()->delete();
@@ -116,7 +117,7 @@ class PurchaseOrderForm extends Component
             if (trim($itemData['item_description'] ?? '') === '' || trim($itemData['unit'] ?? '') === '' || trim($itemData['quantity'] ?? '') === '') continue;
             $po->items()->create([
                 'procurement_item_id' => $itemData['procurement_item_id'] ?: null,
-                'supplier_id' => $itemData['supplier_id'],
+                'supplier_id' => !empty($itemData['supplier_id']) ? (int) $itemData['supplier_id'] : $po->supplier_id,
                 'item_description' => $itemData['item_description'],
                 'unit' => $itemData['unit'],
                 'quantity' => $itemData['quantity'],
