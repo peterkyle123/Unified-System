@@ -38,10 +38,56 @@ class RfqForm extends Component
     public int    $itemPage     = 1;
 
     // -------------------------------------------------------------------------
+    // Multi-select for bulk delete
+    // -------------------------------------------------------------------------
+    public array $selectedItems = [];
+
+    // -------------------------------------------------------------------------
     // Paste items state
     // -------------------------------------------------------------------------
     public bool   $showPasteArea = false;
     public string $pasteText     = '';
+    public string $pasteFormat   = 'brand_desc_unit_qty_price'; // default format key
+
+    // Map of paste format key => column labels for that format
+    public array $pasteFormats = [
+        'brand_desc_unit_qty_price' => [
+            'label' => 'Brand · Description · Unit · Qty · Unit Price',
+            'cols'  => ['brand', 'desc', 'unit', 'qty', 'price'],
+        ],
+        'brand_desc_unit_qty' => [
+            'label' => 'Brand · Description · Unit · Qty',
+            'cols'  => ['brand', 'desc', 'unit', 'qty'],
+        ],
+        'desc_unit_qty_price' => [
+            'label' => 'Description · Unit · Qty · Unit Price',
+            'cols'  => ['desc', 'unit', 'qty', 'price'],
+        ],
+        'desc_unit_qty' => [
+            'label' => 'Description · Unit · Qty',
+            'cols'  => ['desc', 'unit', 'qty'],
+        ],
+        'num_desc_brand_unit_qty_price' => [
+            'label' => '# · Description · Brand · Unit · Qty · Unit Price',
+            'cols'  => ['num', 'desc', 'brand', 'unit', 'qty', 'price'],
+        ],
+        'num_desc_brand_unit_qty' => [
+            'label' => '# · Description · Brand · Unit · Qty',
+            'cols'  => ['num', 'desc', 'brand', 'unit', 'qty'],
+        ],
+        'num_desc_unit_qty_price' => [
+            'label' => '# · Description · Unit · Qty · Unit Price',
+            'cols'  => ['num', 'desc', 'unit', 'qty', 'price'],
+        ],
+        'num_desc_unit_qty' => [
+            'label' => '# · Description · Unit · Qty',
+            'cols'  => ['num', 'desc', 'unit', 'qty'],
+        ],
+        'qty_desc_unit_price' => [
+            'label' => 'Qty · Description · Unit · Unit Price',
+            'cols'  => ['qty', 'desc', 'unit', 'price'],
+        ],
+    ];
 
     // -------------------------------------------------------------------------
     // Mount — load existing RFQ data when editing, or set defaults when creating
@@ -116,9 +162,7 @@ class RfqForm extends Component
     }
 
     // -------------------------------------------------------------------------
-    // Parse pasted text into line items
-    // Supports tab-separated (Excel) and comma-separated formats
-    // Column order: Description, Unit, Quantity, Unit Price (optional)
+    // Parse pasted text into line items using the selected paste format
     // -------------------------------------------------------------------------
     public function parsePastedItems(): void
     {
@@ -126,29 +170,58 @@ class RfqForm extends Component
         $lines = array_filter($lines, fn($line) => trim($line) !== '');
         $added = 0;
 
-      // Remove existing blank rows before appending pasted items
-$this->items = array_values(array_filter($this->items, fn($item) =>
-    trim($item['item_description'] ?? '') !== '' ||
-    trim($item['unit'] ?? '') !== '' ||
-    trim($item['quantity'] ?? '') !== ''
-));
+        // Remove existing blank rows before appending pasted items
+        $this->items = array_values(array_filter($this->items, fn($item) =>
+            trim($item['item_description'] ?? '') !== '' ||
+            trim($item['unit'] ?? '') !== '' ||
+            trim($item['quantity'] ?? '') !== ''
+        ));
 
-foreach ($lines as $line) {
+        // Get the column mapping for the selected format
+        $format = $this->pasteFormats[$this->pasteFormat] ?? $this->pasteFormats['brand_desc_unit_qty_price'];
+        $colMap = $format['cols'];
+
+        foreach ($lines as $line) {
             // Auto-detect separator: tab (Excel) or comma
             $separator = str_contains($line, "\t") ? "\t" : ",";
             $cols      = array_map('trim', explode($separator, $line));
 
-            // Skip rows that don't have at least description, unit, and quantity
-            if (count($cols) < 3) continue;
+            // Skip rows that don't have at least the minimum required columns
+            // Minimum: description + unit + qty = 3 required columns
+            $requiredCount = count(array_intersect($colMap, ['desc', 'unit', 'qty']));
+            if (count($cols) < $requiredCount) continue;
 
-        $hasBrand = count($cols) >= 5;
-$this->items[] = [
-    'brand'            => $hasBrand ? ($cols[0] ?? '') : '',
-    'item_description' => $hasBrand ? ($cols[1] ?? '') : ($cols[0] ?? ''),
-    'unit'             => $hasBrand ? ($cols[2] ?? '') : ($cols[1] ?? ''),
-    'quantity'         => $hasBrand ? ($cols[3] ?? '') : ($cols[2] ?? ''),
-    'unit_price'       => $hasBrand ? ($cols[4] ?? '') : ($cols[3] ?? ''),
-];
+            $item = [
+                'brand'            => '',
+                'item_description' => '',
+                'unit'             => '',
+                'quantity'         => '',
+                'unit_price'       => '',
+            ];
+
+            foreach ($colMap as $i => $colKey) {
+                $val = $cols[$i] ?? '';
+                switch ($colKey) {
+                    case 'brand':
+                        $item['brand'] = $val;
+                        break;
+                    case 'desc':
+                        $item['item_description'] = $val;
+                        break;
+                    case 'unit':
+                        $item['unit'] = $val;
+                        break;
+                    case 'qty':
+                        $item['quantity'] = $val;
+                        break;
+                    case 'price':
+                        $item['unit_price'] = $val;
+                        break;
+                    // 'num' (row number) is skipped — no mapping needed
+                }
+            }
+
+            $this->items[] = $item;
             $added++;
         }
 
@@ -161,7 +234,61 @@ $this->items[] = [
             $this->showPasteArea = false;
             $this->itemPage      = $this->totalItemPages;
         } else {
-            $this->addError('pasteText', 'Could not parse any items. Each line needs at least: Description, Unit, Quantity.');
+            $this->addError('pasteText', 'Could not parse any items. Check that your pasted data matches the selected format.');
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-select: toggle a single item's selection
+    // -------------------------------------------------------------------------
+    public function toggleItemSelection(int $index): void
+    {
+        if (in_array($index, $this->selectedItems)) {
+            $this->selectedItems = array_values(array_diff($this->selectedItems, [$index]));
+        } else {
+            $this->selectedItems[] = $index;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-select: toggle all paged items
+    // -------------------------------------------------------------------------
+    public function toggleSelectAll(): void
+    {
+        $pagedIndices = array_keys($this->pagedItems);
+        $allSelected = !array_diff($pagedIndices, $this->selectedItems);
+
+        if ($allSelected) {
+            // Deselect all paged
+            $this->selectedItems = array_values(array_diff($this->selectedItems, $pagedIndices));
+        } else {
+            // Select all paged
+            $this->selectedItems = array_values(array_unique(array_merge($this->selectedItems, $pagedIndices)));
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-select: remove all selected items
+    // -------------------------------------------------------------------------
+    public function removeSelectedItems(): void
+    {
+        if (empty($this->selectedItems)) return;
+
+        // Sort descending so splicing doesn't shift indices
+        $toRemove = $this->selectedItems;
+        rsort($toRemove);
+
+        foreach ($toRemove as $index) {
+            if (isset($this->items[$index])) {
+                array_splice($this->items, $index, 1);
+            }
+        }
+
+        $this->selectedItems = [];
+
+        // Clamp page if needed
+        if ($this->itemPage > $this->totalItemPages) {
+            $this->itemPage = $this->totalItemPages;
         }
     }
 

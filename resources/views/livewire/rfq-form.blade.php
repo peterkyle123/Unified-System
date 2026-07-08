@@ -124,6 +124,13 @@
                                 class="text-xs text-gray-700 dark:text-[var(--accent)] prime:text-green-900 hover:text-gray-900 dark:hover:text-[var(--accent-h)] prime:hover:text-green-800 border border-gray-200 dark:border-[var(--accent)] prime:border-green-900 prime:hover:border-green-400 px-3 py-1.5 rounded-lg transition">
                             {{ $showPasteArea ? '✕ Cancel Paste' : '↓ Paste Items' }}
                         </button>
+                        @if(count($selectedItems) > 0)
+                            <button type="button" wire:click="removeSelectedItems"
+                                    onclick="return confirm('Delete {{ count($selectedItems) }} selected item(s)?')"
+                                    class="text-xs text-red-600 dark:text-red-400 prime:text-red-500 border border-red-200 dark:border-red-900 prime:border-red-400 hover:bg-red-50 dark:hover:bg-red-950 prime:hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
+                                Delete Selected ({{ count($selectedItems) }})
+                            </button>
+                        @endif
                     </div>
                 </div>
                 @error('items_empty')
@@ -133,15 +140,21 @@
 
             @if($showPasteArea)
             <div class="px-6 py-4 border-b border-gray-100 dark:border-[var(--border)] prime:border-green-900 bg-gray-50 dark:bg-[var(--surface-2)] prime:bg-green-50">
-                <p class="text-xs text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 mb-2">
-                    Paste from Excel or text. Column order:
-                    <span class="font-mono bg-white dark:bg-[var(--surface-3)] prime:bg-white border border-gray-200 dark:border-[var(--border)] prime:border-green-200 dark:text-[var(--text-2)] prime:text-gray-900 px-1 rounded">
-                       Brand · Description · Unit · Quantity · Unit Price (optional)
-                    </span>
-                </p>
+                <div class="flex items-center gap-3 mb-2">
+                    <p class="text-xs text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Paste from Excel or text.</p>
+                    <div class="flex items-center gap-1">
+                        <label class="text-xs text-gray-400 dark:text-[var(--text-3)] prime:text-gray-400">Format:</label>
+                        <select wire:model="pasteFormat"
+                                class="text-xs border border-gray-200 dark:border-[var(--border)] prime:border-green-200 dark:bg-[var(--surface)] prime:bg-white dark:text-[var(--text-1)] prime:text-gray-900 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                            @foreach ($pasteFormats as $key => $fmt)
+                                <option value="{{ $key }}">{{ $fmt['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
                 <textarea wire:model="pasteText"
                           rows="4"
-                          placeholder="Biogesic&#9;Amoxicillin 500mg&#9;tablet&#9;100&#9;5.50"
+                          placeholder="Paste your data here..."
                           class="w-full border border-gray-200 dark:border-[var(--border)] prime:border-green-200 dark:bg-[var(--surface)] prime:bg-white dark:text-[var(--text-1)] prime:text-gray-900 dark:placeholder-[var(--text-3)] prime:placeholder-green-600 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500 resize-none mb-2">
                 </textarea>
                 @error('pasteText')
@@ -164,6 +177,12 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-[var(--surface-2)] prime:bg-gray-50 border-b border-gray-100 dark:border-[var(--border)] prime:border-green-900">
                     <tr>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900 w-8">
+                            <input type="checkbox"
+                                   wire:click="toggleSelectAll"
+                                   {{ !array_diff(array_keys($pagedItems), $selectedItems) ? 'checked' : '' }}
+                                   class="rounded border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-gray-900 dark:text-[var(--accent)] prime:text-green-600 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                        </th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">#</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">Brand</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">Item Description</th>
@@ -172,7 +191,6 @@
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">Qty</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">Unit Price (₱)</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">Total (₱)</th>
-                        <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -180,6 +198,12 @@
                         <tr wire:key="item-{{ $index }}-{{ $item['item_description'] }}-{{ $item['unit'] }}"
                             class="border-t border-gray-100 dark:border-[var(--border)] prime:border-green-900 hover:bg-gray-50 dark:hover:bg-[var(--surface-2)] prime:hover:bg-green-50">
 
+                            <td class="px-4 py-2">
+                                <input type="checkbox"
+                                       wire:click="toggleItemSelection({{ $index }})"
+                                       {{ in_array($index, $selectedItems) ? 'checked' : '' }}
+                                       class="rounded border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-gray-900 dark:text-[var(--accent)] prime:text-green-600 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                            </td>
                             <td class="px-4 py-2 text-gray-400 dark:text-[var(--text-3)] prime:text-gray-400 text-xs">
                                 {{ ($itemPage - 1) * $itemsPerPage + $loop->iteration }}
                             </td>
@@ -226,15 +250,6 @@
                                         : null;
                                 @endphp
                                 {{ $total ? '₱' . $total : '—' }}
-                            </td>
-
-                            <td class="px-4 py-2">
-                                @if ($totalItemCount > 1)
-                                    <button type="button" wire:click="removeItem({{ $index }})"
-                                            class="text-red-400 hover:text-red-600 text-xs border border-red-200 dark:border-red-900 prime:border-red-200 rounded-lg px-2 py-1 transition">
-                                        Remove
-                                    </button>
-                                @endif
                             </td>
                         </tr>
 
