@@ -105,7 +105,8 @@
         </div>
 
         {{-- Section 2: Line Items --}}
-        <div class="bg-white dark:bg-[var(--surface)] prime:bg-white rounded-xl border border-gray-200 dark:border-[var(--border)] prime:border-green-900 mb-4">
+        <div class="bg-white dark:bg-[var(--surface)] prime:bg-white rounded-xl border border-gray-200 dark:border-[var(--border)] prime:border-green-900 mb-4"
+             wire:key="items-section-{{ $itemPage }}">
 
             <div class="px-6 py-4 border-b border-gray-100 dark:border-[var(--border)] prime:border-green-900">
                 <div class="flex items-center justify-between">
@@ -125,11 +126,35 @@
                             {{ $showPasteArea ? '✕ Cancel Paste' : '↓ Paste Items' }}
                         </button>
                         @if(count($selectedItems) > 0)
-                            <button type="button" wire:click="removeSelectedItems"
-                                    onclick="return confirm('Delete {{ count($selectedItems) }} selected item(s)?')"
+                            <button type="button" 
+                                    wire:click="confirmDelete"
                                     class="text-xs text-red-600 dark:text-red-400 prime:text-red-500 border border-red-200 dark:border-red-900 prime:border-red-400 hover:bg-red-50 dark:hover:bg-red-950 prime:hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
                                 Delete Selected ({{ count($selectedItems) }})
                             </button>
+                        @endif
+
+                        {{-- Delete Confirmation Modal --}}
+                        @if($showDeleteModal)
+                            <div class="fixed top-16 left-0 right-0 bottom-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm bg-white/30">
+                                <div class="bg-white dark:bg-[var(--surface)] prime:bg-white rounded-xl border border-gray-200 dark:border-[var(--border)] prime:border-green-900 p-6 max-w-md w-full shadow-xl">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900 mb-2">Confirm Deletion</h3>
+                                    <p class="text-sm text-gray-600 dark:text-[var(--text-2)] prime:text-gray-600 mb-6">
+                                        Are you sure you want to delete the selected {{ count($selectedItems) }} item(s)? This action cannot be undone.
+                                    </p>
+                                    <div class="flex items-center justify-end gap-3">
+                                        <button type="button" 
+                                                wire:click="$set('showDeleteModal', false)"
+                                                class="text-xs px-4 py-2 border border-gray-200 dark:border-[var(--border)] prime:border-green-900 text-gray-700 dark:text-[var(--text-2)] prime:text-gray-900 rounded-lg hover:bg-gray-50 dark:hover:bg-[var(--surface-2)] prime:hover:bg-green-50 transition">
+                                            Cancel
+                                        </button>
+                                        <button type="button" 
+                                                wire:click="removeSelectedItems"
+                                                class="text-xs px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -177,11 +202,19 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-[var(--surface-2)] prime:bg-gray-50 border-b border-gray-100 dark:border-[var(--border)] prime:border-green-900">
                     <tr>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900 w-8">
-                            <input type="checkbox"
-                                   wire:click="toggleSelectAll"
-                                   {{ !array_diff(array_keys($pagedItems), $selectedItems) ? 'checked' : '' }}
-                                   class="rounded border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-gray-900 dark:text-[var(--accent)] prime:text-green-600 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                        <th class="px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900 w-8" @if(count($filteredItems) === 0) style="display: none;" @endif>
+                            <button type="button"
+                                    wire:click="toggleSelectAll"
+                                    class="flex items-center justify-center w-4 h-4 rounded border transition
+                                        {{ count($selectedItems) === count($filteredItems) && count($filteredItems) > 0
+                                            ? 'bg-gray-900 dark:bg-[var(--accent)] prime:bg-green-600 border-transparent text-white'
+                                            : 'border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-transparent hover:border-gray-400' }}">
+                                @if(count($selectedItems) === count($filteredItems) && count($filteredItems) > 0)
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                @endif
+                            </button>
                         </th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">#</th>
                         <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-900">Brand</th>
@@ -199,10 +232,18 @@
                             class="border-t border-gray-100 dark:border-[var(--border)] prime:border-green-900 hover:bg-gray-50 dark:hover:bg-[var(--surface-2)] prime:hover:bg-green-50">
 
                             <td class="px-4 py-2">
-                                <input type="checkbox"
-                                       wire:click="toggleItemSelection({{ $index }})"
-                                       {{ in_array($index, $selectedItems) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-gray-900 dark:text-[var(--accent)] prime:text-green-600 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                                <button type="button"
+                                        wire:click="toggleItemSelection({{ $index }})"
+                                        class="flex items-center justify-center w-4 h-4 rounded border transition
+                                            {{ in_array($index, $selectedItems)
+                                                ? 'bg-gray-900 dark:bg-[var(--accent)] prime:bg-green-600 border-transparent text-white'
+                                                : 'border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-transparent hover:border-gray-400' }}">
+                                    @if(in_array($index, $selectedItems))
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    @endif
+                                </button>
                             </td>
                             <td class="px-4 py-2 text-gray-400 dark:text-[var(--text-3)] prime:text-gray-400 text-xs">
                                 {{ ($itemPage - 1) * $itemsPerPage + $loop->iteration }}
@@ -307,15 +348,20 @@
         </div>
 
         {{-- Form Actions --}}
-        <div class="flex items-center gap-3">
-            <button type="submit"
-                    class="bg-gray-900 hover:bg-gray-800 dark:bg-[var(--accent)] dark:hover:bg-[var(--accent-h)] prime:bg-green-600 prime:hover:bg-green-700 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition">
-                {{ $rfqId ? 'Update RFQ' : 'Save RFQ' }}
-            </button>
-            <a href="{{ route('rfqs.index') }}"
-               class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900 transition">
-                Cancel
-            </a>
+        <div>
+            @error('items_empty')
+                <p class="text-red-500 text-sm mb-3">{{ $message }}</p>
+            @enderror
+            <div class="flex items-center gap-3">
+                <button type="submit"
+                        class="bg-gray-900 hover:bg-gray-800 dark:bg-[var(--accent)] dark:hover:bg-[var(--accent-h)] prime:bg-green-600 prime:hover:bg-green-700 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition">
+                    {{ $rfqId ? 'Update RFQ' : 'Save RFQ' }}
+                </button>
+                <a href="{{ route('rfqs.index') }}"
+                   class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 hover:text-gray-900 dark:hover:text-[var(--text-1)] prime:hover:text-gray-900 transition">
+                    Cancel
+                </a>
+            </div>
         </div>
 
     </form>

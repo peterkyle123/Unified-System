@@ -41,6 +41,11 @@ class RfqForm extends Component
     // Multi-select for bulk delete
     // -------------------------------------------------------------------------
     public array $selectedItems = [];
+    
+    // -------------------------------------------------------------------------
+    // Delete confirmation modal
+    // -------------------------------------------------------------------------
+    public bool $showDeleteModal = false;
 
     // -------------------------------------------------------------------------
     // Paste items state
@@ -251,20 +256,28 @@ class RfqForm extends Component
     }
 
     // -------------------------------------------------------------------------
-    // Multi-select: toggle all paged items
+    // Multi-select: toggle ALL items
     // -------------------------------------------------------------------------
     public function toggleSelectAll(): void
     {
-        $pagedIndices = array_keys($this->pagedItems);
-        $allSelected = !array_diff($pagedIndices, $this->selectedItems);
+        $allIndices = array_keys($this->filteredItems);
+        $allSelected = !array_diff($allIndices, $this->selectedItems);
 
         if ($allSelected) {
-            // Deselect all paged
-            $this->selectedItems = array_values(array_diff($this->selectedItems, $pagedIndices));
+            // Deselect all
+            $this->selectedItems = [];
         } else {
-            // Select all paged
-            $this->selectedItems = array_values(array_unique(array_merge($this->selectedItems, $pagedIndices)));
+            // Select all
+            $this->selectedItems = $allIndices;
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Show delete confirmation modal
+    // -------------------------------------------------------------------------
+    public function confirmDelete(): void
+    {
+        $this->showDeleteModal = true;
     }
 
     // -------------------------------------------------------------------------
@@ -285,6 +298,7 @@ class RfqForm extends Component
         }
 
         $this->selectedItems = [];
+        $this->showDeleteModal = false;
 
         // Clamp page if needed
         if ($this->itemPage > $this->totalItemPages) {
@@ -410,6 +424,18 @@ public function toggleReviewing(): void
             'items.*.quantity'         => 'required|integer|min:1',
             'items.*.unit_price'       => 'nullable|numeric|min:0',
         ]);
+
+        // Ensure at least one item is present
+        $hasAtLeastOneItem = collect($this->items)->some(fn($item) =>
+            trim($item['item_description'] ?? '') !== '' &&
+            trim($item['unit'] ?? '') !== '' &&
+            trim($item['quantity'] ?? '') !== ''
+        );
+
+        if (!$hasAtLeastOneItem) {
+            $this->addError('items_empty', 'Please add at least one item with description, unit, and quantity before saving.');
+            return;
+        }
 
         // --- Prepare data ---
         $data = [
