@@ -87,9 +87,9 @@
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Agency</th>
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Description</th>
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Unit</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Qty</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Unit Price</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Total</th>
+                                <th class="text-right py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Qty</th>
+                                <th class="text-right py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Unit Price</th>
+                                <th class="text-right py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500">Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -98,7 +98,7 @@
                                     <td class="py-2 px-2">{{ $item->agency->name ?? 'N/A' }}</td>
                                     <td class="py-2 px-2">{{ $item->item_description }}</td>
                                     <td class="py-2 px-2">{{ $item->unit }}</td>
-                                    <td class="py-2 px-2 text-right">{{ number_format($item->quantity, 2) }}</td>
+                                    <td class="py-2 px-2 text-right">{{ number_format($item->quantity, 0) }}</td>
                                     <td class="py-2 px-2 text-right">{{ $item->unit_price ? '₱ ' . number_format($item->unit_price, 2) : '-' }}</td>
                                     <td class="py-2 px-2 text-right font-mono">₱ {{ number_format($item->total_price, 2) }}</td>
                                 </tr>

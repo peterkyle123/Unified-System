@@ -130,9 +130,9 @@
                                                class="w-full border border-gray-200 dark:border-[var(--border)] prime:border-green-900 dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] dark:placeholder-[var(--text-3)] prime:text-gray-900 prime:placeholder-green-600 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
                                     </td>
                                     <td class="py-2 px-2">
-                                        <input type="number" wire:model="items.{{ $index }}.quantity"
-                                               placeholder="Qty" required step="0.01" min="0"
-                                               class="w-full border border-gray-200 dark:border-[var(--border)] prime:border-green-900 dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] prime:text-gray-900 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                                <input type="number" wire:model="items.{{ $index }}.quantity"
+                                       placeholder="Qty" required step="1" min="1"
+                                       class="w-full border border-gray-200 dark:border-[var(--border)] prime:border-green-900 dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] prime:text-gray-900 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
                                     </td>
                                     <td class="py-2 px-2">
                                         <input type="number" wire:model="items.{{ $index }}.unit_price"
