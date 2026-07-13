@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase-orders/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('purchase-orders.edit');
     Route::delete('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy');
     Route::get('/purchase-orders/{purchaseOrder}/print', [PurchaseOrderController::class, 'print'])->name('purchase-orders.print');
+    Route::get('/purchase-orders/{purchaseOrder}/download', [PurchaseOrderController::class, 'downloadExcel'])->name('purchase-orders.download');
 
     // ── Supplier routes ───────────────────────────────────────────────────────
     Route::get('/suppliers',                [SupplierController::class, 'index'])->name('suppliers.index');

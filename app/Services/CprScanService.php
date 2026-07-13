@@ -26,7 +26,7 @@ class CprScanService
      * How many PDFs to parse in parallel via proc_open.
      * Set to 1 to force sequential parsing (useful for debugging).
      */
-    private const PARSE_CONCURRENCY = 8;
+    private const PARSE_CONCURRENCY = 16;
 
     /**
      * Paths that must never be scanned regardless of what the user submits.
@@ -90,7 +90,8 @@ class CprScanService
         if ($forceRescan) {
             CprRecord::whereIn('filename', collect($files)->map(fn($f) => basename($f))->toArray())->delete();
         }
-$filenames = collect($files)->map(fn($f) => basename($f))->toArray();
+
+        $filenames = collect($files)->map(fn($f) => basename($f))->toArray();
 
 $t3 = microtime(true);
 $existingRecords = CprRecord::whereIn('filename', $filenames)
@@ -142,10 +143,15 @@ $existingRecords = CprRecord::whereIn('filename', $filenames)
     public function paginateResults(string $folderPath, int $page, int $perPage, ?string $filterStatus = null, ?string $search = null): array
     {
         $diskFiles     = glob($folderPath . DIRECTORY_SEPARATOR . '*.pdf') ?: [];
-        $diskFilenames = array_map('basename', $diskFiles);
+        $diskFilenames = array_map(fn($f) => basename($f), $diskFiles);
 
-        $query = CprRecord::where('folder_path', $folderPath)
-            ->whereIn('filename', $diskFilenames);
+        $query = CprRecord::where('folder_path', $folderPath);
+        
+        if (!empty($diskFilenames)) {
+            $query->whereIn('filename', $diskFilenames);
+        } else {
+            $query->whereRaw('1 = 0'); // Return no results if no PDFs
+        }
 
         if ($filterStatus) {
             $query->where('status', $filterStatus);
@@ -175,10 +181,15 @@ $existingRecords = CprRecord::whereIn('filename', $filenames)
      */
     public function summaryCounts(string $folderPath, ?string $search = null): array
     {
-        $diskFilenames = array_map('basename', glob($folderPath . DIRECTORY_SEPARATOR . '*.pdf') ?: []);
+        $diskFilenames = array_map(fn($f) => basename($f), glob($folderPath . DIRECTORY_SEPARATOR . '*.pdf') ?: []);
 
-        $query = CprRecord::where('folder_path', $folderPath)
-            ->whereIn('filename', $diskFilenames);
+        $query = CprRecord::where('folder_path', $folderPath);
+        
+        if (!empty($diskFilenames)) {
+            $query->whereIn('filename', $diskFilenames);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
 
         if ($search) {
             $query->where('brand_name', 'LIKE', '%' . $search . '%');
@@ -207,7 +218,6 @@ $existingRecords = CprRecord::whereIn('filename', $filenames)
         return [
             'results'             => [],
             'folder_path'         => null,
-            'folderPath'          => null,
             'perPage'             => 10,
             'page'                => 1,
             'total'               => 0,
@@ -364,7 +374,7 @@ private function buildRow(string $file, array $parsed, string $folderPath, $now)
      */
     private function upsertChunked(array $rows): void
     {
-        foreach (array_chunk($rows, 100) as $chunk) {
+        foreach (array_chunk($rows, 500) as $chunk) {
             DB::transaction(function () use ($chunk) {
                 DB::table('cpr_records')->upsert(
                     $chunk,
@@ -487,7 +497,8 @@ private function buildRow(string $file, array $parsed, string $folderPath, $now)
 
         while (!empty($running)) {
             foreach ($running as $filename => $job) {
-                if (proc_get_status($job['proc'])['running']) {
+                $procStatus = proc_get_status($job['proc']);
+                if (($procStatus['running'] ?? false)) {
                     continue;
                 }
 

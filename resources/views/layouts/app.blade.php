@@ -18,6 +18,12 @@
 <body class="bg-gray-50 text-gray-900 min-h-screen dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] prime:bg-white prime:text-gray-900"
       x-data="{
           theme: localStorage.getItem('theme') || 'light',
+          init() {
+              const saved = localStorage.getItem('theme');
+              if (saved === 'dark' || saved === 'prime') {
+                  document.documentElement.classList.add(saved);
+              }
+          },
           cycle() {
               if (this.theme === 'light') this.theme = 'dark';
               else if (this.theme === 'dark') this.theme = 'prime';
@@ -35,6 +41,7 @@
               this.confirmModal.show = true;
           }
       }"
+      x-init="init()"
       @open-confirm.window="confirm($event.detail.title, $event.detail.message, $event.detail.action)">
 
     {{-- Navbar --}}
@@ -92,13 +99,13 @@
                     Procurement
                 </a>
 
-                {{-- Purchase Orders --}}
+                {{-- For Quotation --}}
                 <a href="{{ route('purchase-orders.index') }}"
                    class="px-4 py-2 rounded-lg transition font-medium
                        {{ request()->is('purchase-orders*')
                            ? 'bg-gray-900 text-white dark:bg-[var(--accent)] dark:text-white prime:bg-green-600 prime:text-white'
                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-[var(--text-3)] dark:hover:text-[var(--text-1)] dark:hover:bg-[var(--surface-3)] prime:text-green-700 prime:hover:text-gray-900 prime:hover:bg-green-50' }}">
-                    Purchase Orders
+                    For Quotation
                 </a>
 
                 {{-- Suppliers --}}
@@ -229,10 +236,10 @@
      x-show="confirmModal.show"
      x-cloak
      x-transition:enter="transition ease-out duration-150"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
+     x-transition:enter-start="opacity-0 -translate-y-1"
+     x-transition:enter-end="opacity-100 translate-y-0"
      x-transition:leave="transition ease-in duration-100"
-     x-transition:leave-start="opacity-100"
+     x-transition:leave-start="opacity-100 translate-y-0"
      x-transition:leave-end="opacity-0"
      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white dark:bg-[var(--surface)] prime:bg-white rounded-xl border border-gray-200 dark:border-[var(--border)] prime:border-green-900 p-6 max-w-md w-full mx-4 shadow-xl">

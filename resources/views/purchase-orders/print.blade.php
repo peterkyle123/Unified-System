@@ -86,8 +86,10 @@
                         <th style="width: 36%;">Description</th>
                         <th class="text-center" style="width: 8%;">Unit</th>
                         <th class="text-right" style="width: 12%;">Qty</th>
-                        <th class="text-right" style="width: 18%;">Unit Price</th>
-                        <th class="text-right" style="width: 22%;">Total</th>
+                        @if(!$purchaseOrder->hide_price)
+                            <th class="text-right" style="width: 18%;">Unit Price</th>
+                            <th class="text-right" style="width: 22%;">Total</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -97,17 +99,21 @@
                             <td>{{ $item->item_description }}</td>
                             <td class="text-center">{{ $item->unit }}</td>
                             <td class="text-right">{{ number_format($item->quantity, 0) }}</td>
-                            <td class="text-right">₱ {{ number_format($item->unit_price ?? 0, 2) }}</td>
-                            <td class="text-right">₱ {{ number_format($item->total_price ?? 0, 2) }}</td>
+                            @if(!$purchaseOrder->hide_price)
+                                <td class="text-right">₱ {{ number_format($item->unit_price ?? 0, 2) }}</td>
+                                <td class="text-right">₱ {{ number_format($item->total_price ?? 0, 2) }}</td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
-                <tfoot class="tfoot">
-                    <tr>
-                        <td colspan="5" class="text-right">TOTAL AMOUNT:</td>
-                        <td class="text-right">₱ {{ number_format($purchaseOrder->total_amount ?? 0, 2) }}</td>
-                    </tr>
-                </tfoot>
+                @if(!$purchaseOrder->hide_price)
+                    <tfoot class="tfoot">
+                        <tr>
+                            <td colspan="5" class="text-right">TOTAL AMOUNT:</td>
+                            <td class="text-right">₱ {{ number_format($purchaseOrder->total_amount ?? 0, 2) }}</td>
+                        </tr>
+                    </tfoot>
+                @endif
             </table>
         </div>
 

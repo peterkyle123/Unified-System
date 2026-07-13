@@ -4,8 +4,8 @@
     <div>
         {{-- Page header --}}
         <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-xl font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">Purchase Orders</h1>
+        <div>
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">For Quotation</h1>
                 <p class="text-sm text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 mt-0.5">All purchase orders generated from procurements</p>
             </div>
         </div>

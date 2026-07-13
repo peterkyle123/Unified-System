@@ -80,6 +80,14 @@
                               class="w-full border border-gray-200 dark:border-[var(--border)] prime:border-green-900 dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] prime:text-gray-900 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500"></textarea>
                     @error('notes') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+
+                <div class="md:col-span-2">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model="hidePrice"
+                               class="rounded border-gray-300 dark:border-[var(--border)] prime:border-green-900 text-gray-900 dark:text-[var(--accent)] prime:text-green-600 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
+                        <span class="text-sm text-gray-700 dark:text-[var(--text-2)] prime:text-gray-900">Hide Prices (generate PO without unit price and total)</span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -105,7 +113,6 @@
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 w-24">Qty</th>
                                 <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 w-28">Unit Price</th>
                                 <th class="text-right py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 w-28">Total</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 dark:text-[var(--text-3)] prime:text-gray-500 w-32">Status</th>
                                 <th class="py-2 px-2 w-10"></th>
                             </tr>
                         </thead>
@@ -135,16 +142,6 @@
                                     <td class="py-2 px-2 text-right font-mono text-xs">
                                         {{ number_format((float) ($item['unit_price'] ?? 0) * (float) ($item['quantity'] ?? 0), 2) }}
                                     </td>
-                                    <td class="py-2 px-2">
-                                        <select wire:model="items.{{ $index }}.status"
-                                                class="w-full border border-gray-200 dark:border-[var(--border)] prime:border-green-900 dark:bg-[var(--surface-2)] dark:text-[var(--text-1)] prime:text-gray-900 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-[var(--accent)] prime:focus:ring-green-500">
-                                            <option value="Pending">Pending</option>
-                                            <option value="Ordered">Ordered</option>
-                                            <option value="Delivered">Delivered</option>
-                                            <option value="Received">Received</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
-                                    </td>
                                     <td class="py-2 px-2 text-center">
                                         <button type="button" wire:click="removeItem({{ $index }})"
                                                 class="text-red-500 hover:text-red-700 transition">
@@ -162,7 +159,7 @@
                                 <td class="py-3 px-2 text-right font-mono font-semibold text-gray-900 dark:text-[var(--text-1)] prime:text-gray-900">
                                     <span style="white-space: nowrap;">₱ {{ number_format(collect($items)->sum(fn($item) => (float) ($item['unit_price'] ?? 0) * (float) ($item['quantity'] ?? 0)), 2) }}</span>
                                 </td>
-                                <td colspan="2"></td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -180,7 +177,7 @@
             </a>
             <button type="submit" wire:loading.attr="disabled"
                     class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-medium disabled:opacity-50">
-                <span wire:loading.remove>Save Purchase Order</span>
+                <span wire:loading.remove>Save For Quotation</span>
                 <span wire:loading>Saving...</span>
             </button>
         </div>

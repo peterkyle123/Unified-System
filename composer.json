@@ -10,6 +10,7 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^4.3",
+        "phpoffice/phpspreadsheet": "^5.8",
         "smalot/pdfparser": "^2.12",
         "thiagoalessio/tesseract_ocr": "^2.13"
     },

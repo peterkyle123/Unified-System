@@ -19,6 +19,7 @@ class PurchaseOrderForm extends Component
     public ?int $procurement_id = null;
     public array $items = [];
     public ?int $purchaseOrderId = null;
+    public bool $hidePrice = false;
 
     public function mount(?int $purchaseOrderId = null, ?int $procurement_id = null): void
     {
@@ -97,7 +98,8 @@ class PurchaseOrderForm extends Component
             'status' => 'required|in:Draft,Submitted,Ordered,Received,Cancelled',
             'notes' => 'nullable|string',
         ]);
-        $validated['total_amount'] = collect($this->items)
+        $validated['hide_price'] = $this->hidePrice;
+        $validated['total_amount'] = $this->hidePrice ? 0 : collect($this->items)
             ->filter(fn($item) => trim($item['item_description'] ?? '') !== '' && trim($item['unit'] ?? '') !== '' && trim($item['quantity'] ?? '') !== '')
             ->sum(fn($item) => (float) ($item['unit_price'] ?? 0) * (float) ($item['quantity']));
         if (empty($validated['delivery_deadline'])) $validated['delivery_deadline'] = null;

@@ -33,7 +33,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Purchase Quotation</h1>
+            <h1>For Quotation</h1>
             <p>{{ $procurement->procurement_number }}</p>
             <div class="no-print" style="margin-top: 8px;">
                 <a href="{{ route('procurements.export', $procurement) }}"
@@ -108,7 +108,11 @@
                             <td>{{ $groupItems[0]->agency->name ?? 'N/A' }}</td>
                             <td class="text-center" rowspan="{{ $count }}">{{ $first->unit }}</td>
                             <td class="text-right">{{ number_format($groupItems[0]->quantity, 0) }}</td>
-                            <td class="text-right" rowspan="{{ $allSamePrice ? $count : 1 }}">₱ {{ number_format($groupItems[0]->unit_price, 2) }}</td>
+                            <td class="text-right" rowspan="{{ $allSamePrice ? $count : 1 }}">
+                                @if($groupItems[0]->unit_price)
+                                    ₱ {{ number_format($groupItems[0]->unit_price, 2) }}
+                                @endif
+                            </td>
                             <td class="text-right">₱ {{ number_format($groupItems[0]->total_price, 2) }}</td>
                             <td class="text-right" rowspan="{{ $count }}" style="font-weight:600;">₱ {{ number_format($totalPrice, 2) }}</td>
                         </tr>
@@ -118,7 +122,11 @@
                                 <td>{{ $groupItems[$i]->agency->name ?? 'N/A' }}</td>
                                 <td class="text-right">{{ number_format($groupItems[$i]->quantity, 0) }}</td>
                                 @if(!$allSamePrice)
-                                    <td class="text-right">₱ {{ number_format($groupItems[$i]->unit_price, 2) }}</td>
+                                    <td class="text-right">
+                                        @if($groupItems[$i]->unit_price)
+                                            ₱ {{ number_format($groupItems[$i]->unit_price, 2) }}
+                                        @endif
+                                    </td>
                                 @endif
                                 <td class="text-right">₱ {{ number_format($groupItems[$i]->total_price, 2) }}</td>
                             </tr>
@@ -128,7 +136,11 @@
                 <tfoot class="tfoot">
                     <tr>
                         <td colspan="8" class="text-right">TOTAL AMOUNT:</td>
-                        <td class="text-right">₱ {{ number_format($procurement->total_amount, 2) }}</td>
+                        <td class="text-right">
+                            @if($procurement->total_amount)
+                                ₱ {{ number_format($procurement->total_amount, 2) }}
+                            @endif
+                        </td>
                     </tr>
                 </tfoot>
             </table>

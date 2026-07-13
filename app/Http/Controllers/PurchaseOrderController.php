@@ -6,6 +6,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Procurement;
 use App\Models\ActivityLog;
+use App\Exports\PurchaseOrderExport;
 use Illuminate\Http\Request;
 
 class PurchaseOrderController extends Controller
@@ -58,5 +59,18 @@ class PurchaseOrderController extends Controller
     public function print(PurchaseOrder $purchaseOrder)
     {
         return view('purchase-orders.print', compact('purchaseOrder'));
+    }
+
+    public function downloadExcel(PurchaseOrder $purchaseOrder)
+    {
+        $export = new PurchaseOrderExport($purchaseOrder);
+        
+        return response($export->generate(), 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $export->fileName() . '"',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }

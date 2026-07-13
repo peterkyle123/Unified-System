@@ -161,7 +161,7 @@ class ProcurementForm extends Component
                     'item_description' => $rfqItem->item_description,
                     'unit' => $rfqItem->unit,
                     'quantity' => (string) $rfqItem->quantity,
-                    'unit_price' => (string) ($rfqItem->unit_price ?? ''),
+                    'unit_price' => '',
                     'status' => 'Pending',
                     'notes' => '',
                 ];
@@ -260,7 +260,9 @@ class ProcurementForm extends Component
             $validated['delivery_deadline'] = null;
         }
 
-        $validated['total_amount'] = collect($this->items)->sum(fn($item) => (float) $item['unit_price'] * (float) $item['quantity']);
+        $validated['total_amount'] = collect($this->items)
+            ->filter(fn($item) => trim($item['item_description'] ?? '') !== '' && trim($item['unit'] ?? '') !== '' && trim($item['quantity'] ?? '') !== '')
+            ->sum(fn($item) => (float) ($item['unit_price'] ?? 0) * (float) ($item['quantity'] ?? 0));
 
         if ($this->procurementId) {
             $procurement = Procurement::findOrFail($this->procurementId);

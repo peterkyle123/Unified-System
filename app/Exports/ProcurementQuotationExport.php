@@ -3,6 +3,10 @@
 namespace App\Exports;
 
 use App\Models\Procurement;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ProcurementQuotationExport
 {
@@ -12,28 +16,57 @@ class ProcurementQuotationExport
 
     public function generate(): string
     {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set document properties
+        $spreadsheet->getProperties()
+            ->setTitle('Purchase Quotation')
+            ->setSubject($this->procurement->procurement_number)
+            ->setDescription('Purchase Quotation document');
+        
+        // Header info
+        $sheet->setCellValue('A1', 'FOR QUOTATION');
+        $sheet->setCellValue('A2', $this->procurement->procurement_number);
+        
+        // Quotation details
+        $sheet->setCellValue('A4', 'Reference No.:');
+        $sheet->setCellValue('B4', $this->procurement->procurement_number);
+        $sheet->setCellValue('A5', 'Status:');
+        $sheet->setCellValue('B5', $this->procurement->status);
+        $sheet->setCellValue('A6', 'Agency/ies:');
+        $sheet->setCellValue('B6', $this->procurement->agencies->pluck('name')->filter()->join(', ') ?: 'N/A');
+        $sheet->setCellValue('A7', 'Prepared By:');
+        $sheet->setCellValue('B7', $this->procurement->preparedBy?->name ?? 'N/A');
+        $sheet->setCellValue('A8', 'Date:');
+        $sheet->setCellValue('B8', $this->procurement->date_prepared->format('F d, Y'));
+        $sheet->setCellValue('A9', 'Delivery Deadline:');
+        $sheet->setCellValue('B9', $this->procurement->delivery_deadline?->format('F d, Y') ?? 'N/A');
+        
+        // Group items by description + brand + unit
         $items = $this->procurement->items;
         $grouped = $items->groupBy(fn($item) => $item->item_description . '|' . ($item->brand ?? '') . '|' . $item->unit);
-
-        $html = '<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial;font-size:11px;">';
-
-        // Header row
-        $html .= '<thead>';
-        $html .= '<tr style="background:#f0f0f0;font-weight:bold;">';
-        $html .= '<th>#</th>';
-        $html .= '<th>Description</th>';
-        $html .= '<th>Brand</th>';
-        $html .= '<th>Agency</th>';
-        $html .= '<th>Unit</th>';
-        $html .= '<th>Qty</th>';
-        $html .= '<th>Unit Price</th>';
-        $html .= '<th>Subtotal</th>';
-        $html .= '<th>Total</th>';
-        $html .= '</tr>';
-        $html .= '</thead>';
-
-        $html .= '<tbody>';
-
+        
+        // Table headers
+        $row = 11;
+        $sheet->setCellValue('A' . $row, '#');
+        $sheet->setCellValue('B' . $row, 'Description');
+        $sheet->setCellValue('C' . $row, 'Brand');
+        $sheet->setCellValue('D' . $row, 'Agency');
+        $sheet->setCellValue('E' . $row, 'Unit');
+        $sheet->setCellValue('F' . $row, 'Qty');
+        $sheet->setCellValue('G' . $row, 'Unit Price');
+        $sheet->setCellValue('H' . $row, 'Subtotal');
+        $sheet->setCellValue('I' . $row, 'Total');
+        
+        // Style headers
+        $headerRange = 'A' . $row . ':I' . $row;
+        $sheet->getStyle($headerRange)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFE0E0E0');
+        $sheet->getStyle($headerRange)->getFont()->setBold(true);
+        
+        // Items
         $rowNum = 0;
         foreach ($grouped as $groupItems) {
             $rowNum++;
@@ -42,96 +75,75 @@ class ProcurementQuotationExport
             $totalPrice = $groupItems->sum('total_price');
             $allSamePrice = $groupItems->pluck('unit_price')->unique()->filter()->count() <= 1;
             $totalQty = $groupItems->sum('quantity');
-
+            
             foreach ($groupItems as $i => $gi) {
-                $html .= '<tr>';
-                $html .= $i === 0 ? '<td rowspan="' . $count . '">' . $rowNum . '</td>' : '';
-                $html .= $i === 0 ? '<td rowspan="' . $count . '">' . htmlspecialchars($first->item_description) . '</td>' : '';
-                $html .= $i === 0 ? '<td rowspan="' . $count . '">' . htmlspecialchars($first->brand ?? '-') . '</td>' : '';
-                $html .= '<td>' . htmlspecialchars($gi->agency->name ?? 'N/A') . '</td>';
-                $html .= $i === 0 ? '<td rowspan="' . $count . '">' . htmlspecialchars($first->unit) . '</td>' : '';
-                $html .= '<td align="right">' . number_format($gi->quantity, 0) . '</td>';
-                $html .= ($i === 0 && $allSamePrice) || (!$allSamePrice)
-                    ? '<td align="right"' . ($i === 0 && $allSamePrice ? ' rowspan="' . $count . '"' : '') . '>₱ ' . number_format($gi->unit_price, 2) . '</td>'
-                    : '';
-                $html .= '<td align="right">₱ ' . number_format($gi->total_price, 2) . '</td>';
-                $html .= $i === 0 ? '<td rowspan="' . $count . '" align="right" style="font-weight:bold;">₱ ' . number_format($totalPrice, 2) . '</td>' : '';
-                $html .= '</tr>';
+                $row++;
+                if ($i === 0) {
+                    $sheet->setCellValue('A' . $row, $rowNum);
+                    $sheet->setCellValue('B' . $row, $first->item_description);
+                    $sheet->setCellValue('C' . $row, $first->brand ?? '-');
+                    $sheet->setCellValue('E' . $row, $first->unit);
+                    
+                    if ($allSamePrice && $first->unit_price) {
+                        $sheet->setCellValue('G' . $row, $first->unit_price);
+                    }
+                }
+                
+                $sheet->setCellValue('D' . $row, $gi->agency->name ?? 'N/A');
+                $sheet->setCellValue('F' . $row, $gi->quantity);
+                
+                $hasUnitPrice = ($allSamePrice && $first->unit_price) || (!$allSamePrice && $gi->unit_price);
+
+                if ($hasUnitPrice) {
+                    $sheet->setCellValue('H' . $row, $gi->total_price);
+                }
+
+                if ($i === 0 && $first->unit_price) {
+                    $sheet->setCellValue('I' . $row, $totalPrice);
+                }
             }
         }
-
-        $html .= '</tbody>';
-
-        // Summary row
-        $html .= '<tfoot>';
-        $html .= '<tr style="font-weight:bold;background:#f0f0f0;">';
-        $html .= '<td colspan="8" align="right">TOTAL AMOUNT:</td>';
-        $html .= '<td align="right">₱ ' . number_format($this->procurement->total_amount, 2) . '</td>';
-        $html .= '</tr>';
-        $html .= '</tfoot>';
-
-        $html .= '</table>';
-
-        // Full HTML page for excel
-        $fullHtml = '
-        <html xmlns:o="urn:schemas-microsoft-com:office:office"
-              xmlns:x="urn:schemas-microsoft-com:office:excel"
-              xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="UTF-8">
-            <!--[if gte mso 9]>
-            <xml>
-                <x:ExcelWorkbook>
-                    <x:ExcelWorksheets>
-                        <x:ExcelWorksheet>
-                            <x:Name>Quotation</x:Name>
-                            <x:WorksheetOptions>
-                                <x:DisplayGridlines/>
-                            </x:WorksheetOptions>
-                        </x:ExcelWorksheet>
-                    </x:ExcelWorksheets>
-                </x:ExcelWorkbook>
-            </xml>
-            <![endif]-->
-            <style>
-                table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #999; padding: 4px; font-size: 10pt; }
-                th { background: #e0e0e0; font-weight: bold; text-align: left; }
-                .text-right { text-align: right; }
-                .text-center { text-align: center; }
-            </style>
-        </head>
-        <body>
-            <h2 style="text-align:center;">Purchase Quotation</h2>
-            <p style="text-align:center;font-size:11px;color:#666;">' . htmlspecialchars($this->procurement->procurement_number) . '</p>
-
-            <hr style="border:1px solid #222;">
-
-            <table border="0" style="border:none;width:100%;margin-bottom:10px;">
-                <tr>
-                    <td style="border:none;"><strong>Reference No.:</strong> ' . htmlspecialchars($this->procurement->procurement_number) . '</td>
-                    <td style="border:none;"><strong>Status:</strong> ' . htmlspecialchars($this->procurement->status) . '</td>
-                </tr>
-                <tr>
-                    <td style="border:none;"><strong>Agency/ies:</strong> ' . htmlspecialchars($items->unique('agency_id')->pluck('agency.name')->filter()->join(', ') ?: 'N/A') . '</td>
-                    <td style="border:none;"><strong>Prepared By:</strong> ' . htmlspecialchars($this->procurement->preparedBy?->name ?? 'N/A') . '</td>
-                </tr>
-                <tr>
-                    <td style="border:none;"><strong>Date:</strong> ' . $this->procurement->date_prepared->format('F d, Y') . '</td>
-                    <td style="border:none;"><strong>Delivery Deadline:</strong> ' . ($this->procurement->delivery_deadline?->format('F d, Y') ?? 'N/A') . '</td>
-                </tr>
-            </table>
-
-            <h3>Items</h3>
-            ' . $html . '
-        </body>
-        </html>';
-
-        return $fullHtml;
+        
+        // Total row
+        $row++;
+        $sheet->setCellValue('H' . $row, 'TOTAL AMOUNT:');
+        $sheet->setCellValue('I' . $row, $this->procurement->total_amount);
+        $sheet->getStyle('H' . $row . ':I' . $row)->getFont()->setBold(true);
+        $sheet->getStyle('H' . $row . ':I' . $row)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFE0E0E0');
+        
+        // Format currency cells
+        $sheet->getStyle('H12:H' . ($row - 1))->getNumberFormat()
+            ->setFormatCode('₱#,##0.00');
+        $sheet->getStyle('I12:I' . ($row - 1))->getNumberFormat()
+            ->setFormatCode('₱#,##0.00');
+        if ($this->procurement->total_amount) {
+            $sheet->getStyle('I' . $row)->getNumberFormat()
+                ->setFormatCode('₱#,##0.00');
+        }
+        
+        // Auto-size columns
+        foreach (range('A', 'I') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        
+        // Right-align numbers
+        $sheet->getStyle('F12:I' . $row)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        
+        // Write to output buffer
+        $writer = new Xlsx($spreadsheet);
+        ob_start();
+        $writer->save('php://output');
+        $excelOutput = ob_get_contents();
+        ob_end_clean();
+        
+        return $excelOutput;
     }
-
+    
     public function fileName(): string
     {
-        return 'quotation-' . str_replace('/', '-', $this->procurement->procurement_number) . '.xls';
+        return 'quotation-' . str_replace('/', '-', $this->procurement->procurement_number) . '.xlsx';
     }
 }

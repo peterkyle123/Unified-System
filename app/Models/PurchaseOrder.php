@@ -18,12 +18,14 @@ class PurchaseOrder extends Model
         'status',
         'notes',
         'total_amount',
+        'hide_price',
     ];
 
     protected $casts = [
         'date_prepared' => 'date',
         'delivery_deadline' => 'date',
         'total_amount' => 'decimal:2',
+        'hide_price' => 'boolean',
     ];
 
     public function procurement(): BelongsTo
